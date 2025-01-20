@@ -213,6 +213,21 @@ _fzf_completion_post() {
 _fzf_completion_selector() {
     local lines=() reply REPLY
     exec {tty}</dev/tty
+
+    local fzf="$(__fzfcmd 2>/dev/null || echo fzf)"
+    local default_height="${FZF_TMUX_HEIGHT:-40%}"
+    if [[ -z "$FZF_TMUX_HEIGHT" ]]; then
+        # get the cursor pos
+        printf '\e[6n' >/dev/tty
+        local buf c match MATCH
+        until [[ "$buf" =~ $'\x1b\\[([0-9]+);[0-9]+R' ]]; do
+            read -s -k1 c </dev/tty && buf+="$c"
+        done
+        if [[ "$fzf" == fzf ]] && (( LINES - match[1] > LINES * 0.4 )); then
+            default_height="$(( LINES - match[1] ))"
+        fi
+    fi
+
     while (( ${#lines[@]} < 2 )); do
         zselect -r 0 "$tty"
         if (( reply[2] == 0 )); then
@@ -247,8 +262,8 @@ _fzf_completion_selector() {
 
     tput cud1 >/dev/tty # fzf clears the line on exit so move down one
     # fullvalue, value, index, display, show, prefix
-    FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
-        $(__fzfcmd 2>/dev/null || echo fzf) --ansi --prompt "${FZF_TAB_COMPLETION_PROMPT:-> }$PREFIX" -d "[${_FZF_COMPLETION_SEP}${_FZF_COMPLETION_SPACE_SEP}]" --with-nth 6,5,4 --nth "$field" "${flags[@]}" \
+    FZF_DEFAULT_OPTS="--height $default_height --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+        "$fzf" --ansi --prompt "${FZF_TAB_COMPLETION_PROMPT:-> }$PREFIX" -d "[${_FZF_COMPLETION_SEP}${_FZF_COMPLETION_SPACE_SEP}]" --with-nth 6,5,4 --nth "$field" "${flags[@]}" \
         < <( (( ${#lines[@]} )) && printf %s\\n "${lines[@]}"; cat)
     code="$?"
     tput cuu1 >/dev/tty

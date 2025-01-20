@@ -125,7 +125,7 @@ _fzf_bash_completion_unquote_strings() {
     while IFS= read -r line; do
         if [[ "$line" =~ ^\'[^\']*\'?$ ]]; then
             # single quoted with no single quotes inside
-            line="${line%%\'}"
+            line="${line%%"'"}"
             printf '%s\n' "${line:1}"
         elif [[ "$line" =~ ^\"(\\.|[^\"$])*\"?$ ]]; then
             # double quoted with all special characters quoted
@@ -290,6 +290,21 @@ fzf_bash_completion() {
 
 _fzf_bash_completion_selector() {
     (
+
+        local fzf="$(__fzfcmd 2>/dev/null || echo fzf)"
+        local default_height="${FZF_TMUX_HEIGHT:-40%}"
+        if [[ -z "$FZF_TMUX_HEIGHT" ]]; then
+            # get the cursor pos
+            printf '\e[6n' >/dev/tty
+            local buf c
+            until [[ "$buf" =~ $'\x1b'\[([0-9]+)\;[0-9]+R ]]; do
+                read -s -n1 c </dev/tty && buf+="$c"
+            done
+            if [[ "$fzf" == fzf ]] && (( LINES - BASH_REMATCH[1] > LINES * 4 / 10 )); then
+                default_height="$(( LINES - BASH_REMATCH[1] ))"
+            fi
+        fi
+
         local lines=() REPLY
         while (( ${#lines[@]} < 2 )); do
             if IFS= read -r; then
@@ -301,8 +316,8 @@ _fzf_bash_completion_selector() {
             fi
         done
         < <( (( ${#lines[@]} )) && printf %s\\n "${lines[@]}"; cat) \
-        FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
-            $(__fzfcmd 2>/dev/null || echo fzf) -1 -0 --prompt "${FZF_TAB_COMPLETION_PROMPT:-> }$line" --nth=2 --with-nth=2,3 -d "$_FZF_COMPLETION_SEP" --ansi \
+        FZF_DEFAULT_OPTS="--height $default_height --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" \
+            "$fzf" -1 -0 --prompt "${FZF_TAB_COMPLETION_PROMPT:-> }$line" --nth=2 --with-nth=2,3 -d "$_FZF_COMPLETION_SEP" --ansi \
     ) | cut -d "$_FZF_COMPLETION_SEP" -f1
 }
 
