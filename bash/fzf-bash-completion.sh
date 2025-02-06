@@ -291,8 +291,14 @@ fzf_bash_completion() {
 
 _fzf_bash_completion_selector() {
   (
+    local fzf
+    # modern fzf includes a --tmux option. if $FZF_COMPLETION_TMUX_LEGACY is false, use that
+    if [[ "${FZF_COMPLETION_TMUX_LEGACY:-true}" == "true" ]]; then
+      fzf="$(__fzfcmd 2>/dev/null || echo fzf)"
+    else
+      fzf="$(command -v fzf)"
+    fi
 
-    local fzf="$(__fzfcmd 2>/dev/null || echo fzf)"
     local default_height="${FZF_TMUX_HEIGHT:-40%}"
     if [[ -z "$FZF_TMUX_HEIGHT" ]]; then
       # get the cursor pos
