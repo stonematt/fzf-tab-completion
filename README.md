@@ -60,8 +60,34 @@ You may find that adding the `fzf` flag `--tiebreak=chunk` to the environment va
 
 #### tmux
 
-`$FZF_TMUX_OPTS` is respected same as in [fzf](https://github.com/junegunn/fzf#key-bindings-for-command-line)
-however you must have fzf's keybindings enabled as well.
+`$FZF_TMUX_OPTS` is respected same as in [fzf](https://github.com/junegunn/fzf#key-bindings-for-command-line), and you must have fzf's keybindings enabled as well.
+
+Starting with this version, you can configure how fzf integrates with tmux using the `$FZF_COMPLETION_TMUX_LEGACY` environment variable:
+
+- **`true`** (default): Uses the legacy behavior with the `fzf-tmux` wrapper.
+- **`false`**: Enables the native `fzf --tmux` option, which fixes certain issues where `fzf-tmux` commands like `fzf-tmux --height=40% --` would fail with errors (`bash: fzf-tmux --height=40% --: command not found`).
+
+To switch to the new behavior:
+
+```bash
+export FZF_COMPLETION_TMUX_LEGACY=false
+```
+
+````
+If you haven’t already enabled fzf’s tmux mode, you can do so by following this simple tip from the [fzf README](https://github.com/junegunn/fzf?tab=readme-ov-file#--tmux-mode):
+
+```bash
+export FZF_TMUX=1
+````
+
+> [!TIP]
+> You can add these options to `$FZF_DEFAULT_OPTS` so that they're applied by
+> default. For example,
+>
+> ```sh
+> # Open in tmux popup if on tmux, otherwise use --height mode
+> export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+> ```
 
 #### Searching display strings
 
